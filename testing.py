@@ -29,8 +29,8 @@ def query_shopify_inventory_items(store_url, access_token, first_n=2):
         raise Exception(f"Query failed with status {response.status_code}: {response.text}")
 
 
-try:
-    result = query_shopify_inventory_items(store, token)
-    print(result)
-except Exception as e:
-    print(e)
+# try:
+#     result = query_shopify_inventory_items(store, token)
+#     print(result)
+# except Exception as e:
+#     print(e)
