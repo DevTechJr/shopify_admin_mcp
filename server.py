@@ -15,6 +15,9 @@ from tools.articles import (
 )
 from tools.blogs import blog_update, blog_delete, blog_create, get_blogs, blog_update, blog_delete
 from tools.customers import customer_send_account_invite_email, customers_list, customers_count, customer_get
+from tools.orders import orders_list, orders_count
+from tools.discount_codes import (
+    discount_codes_list, discount_code_create, discount_code_get, discount_code_update, discount_code_delete)
 
 mcp = FastMCP("shopify_anidev")
 
@@ -392,3 +395,73 @@ async def customer_get_impl(customer_id: str) -> dict:
         await customer_get_impl("gid://shopify/Customer/544365967")
     """
     return await customer_get(customer_id)
+
+@mcp.tool()
+async def orders_list_impl(
+    first: int = 10,
+    after: str = None,
+    query: str = None,
+    sort_key: str = None
+) -> dict:
+    """
+    Retrieve a list of orders from the Shopify store.
+
+    Args:
+        first: The number of orders to retrieve (default: 10).
+        after: The cursor for pagination (optional).
+        query: A filter string using Shopify's search syntax (optional).
+        sort_key: The field to sort by (optional).
+
+    Example:
+        await orders_list_impl(first=5, query="created_at:>=2024-01-01")
+    """
+    return await orders_list(first=first, after=after, query=query, sort_key=sort_key)
+
+@mcp.tool()
+async def orders_count_impl(query: str = None, limit: int = 10000) -> int:
+    """
+    Retrieve the count of orders in the Shopify store.
+
+    Args:
+        query: A filter string using Shopify's search syntax (optional).
+        limit: The upper bound on the count value before returning a result (default: 10000).
+
+    Example:
+        await orders_count_impl(query="created_at:>=2024-01-01")
+    """
+    return await orders_count(query=query, limit=limit)
+
+@mcp.tool()
+async def discount_codes_list_impl(first: int = 10, after: str = None, query: str = None) -> dict:
+    """
+    Retrieve a list of discount codes from the Shopify store.
+    """
+    return await discount_codes_list(first=first, after=after, query=query)
+
+@mcp.tool()
+async def discount_code_get_impl(discount_code_id: str) -> dict:
+    """
+    Retrieve a discount code by ID.
+    """
+    return await discount_code_get(discount_code_id)
+
+@mcp.tool()
+async def discount_code_create_impl(code: str, starts_at: str, ends_at: str = None) -> dict:
+    """
+    Create a new discount code.
+    """
+    return await discount_code_create(code, starts_at, ends_at)
+
+@mcp.tool()
+async def discount_code_update_impl(discount_code_id: str, code: str = None, ends_at: str = None) -> dict:
+    """
+    Update an existing discount code.
+    """
+    return await discount_code_update(discount_code_id, code, ends_at)
+
+@mcp.tool()
+async def discount_code_delete_impl(discount_code_id: str) -> dict:
+    """
+    Delete a discount code by ID.
+    """
+    return await discount_code_delete(discount_code_id)
