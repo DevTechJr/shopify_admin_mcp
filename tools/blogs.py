@@ -47,3 +47,51 @@ async def blog_create(title: str, handle: str, comment_policy: str = "MODERATED"
     except Exception as e:
         logger.error(f"blog_create failed: {e}")
         return f"Error: {e}"
+
+async def blog_update(blog_id: str, title: str) -> str:
+    """Update the title of an existing blog.
+
+    Args:
+        blog_id: The ID of the blog to update.
+        title: The new title for the blog.
+    """
+    query = """
+    mutation BlogUpdate($id: ID!, $blog: BlogInput!) {
+      blogUpdate(id: $id, blog: $blog) {
+        blog { id title }
+        userErrors { message }
+      }
+    }
+    """
+    try:
+        res = await make_shopify_request(query, variables={"id": blog_id, "blog": {"title": title}})
+        b = res["data"]["blogUpdate"]["blog"]
+        return f"✅ Blog updated: '{b['title']}' (ID: {b['id']})"
+    except Exception as e:
+        logger.error(f"blog_update failed: {e}")
+        return f"Error: {e}"
+
+
+async def blog_delete(blog_id: str) -> str:
+    """Delete a blog from the Shopify store.
+
+    Args:
+        blog_id: The ID of the blog to delete.
+    """
+    query = """
+    mutation BlogDelete($id: ID!) {
+      blogDelete(id: $id) {
+        deletedBlogId
+        userErrors { message }
+      }
+    }
+    """
+    try:
+        res = await make_shopify_request(query, variables={"id": blog_id})
+        deleted_id = res["data"]["blogDelete"]["deletedBlogId"]
+        return f"🗑️ Blog deleted: ID {deleted_id}"
+    except Exception as e:
+        logger.error(f"blog_delete failed: {e}")
+        return f"Error: {e}"
+
+

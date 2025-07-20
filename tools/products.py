@@ -54,3 +54,101 @@ async def get_products(first_n: int = 3) -> str:
         logger.error(f"Products fetch failed: {str(e)}")
         return f"Error: {str(e)}"
 
+async def get_product(product_id: str) -> str:
+    query = """
+    query GetProduct($id: ID!) {
+      product(id: $id) {
+        id
+        title
+        descriptionHtml
+        handle
+        metafields(first: 5) {
+          edges {
+            node {
+              namespace
+              key
+              value
+            }
+          }
+        }
+      }
+    }
+    """
+    try:
+        res = await make_shopify_request(query, variables={"id": product_id})
+        p = res["data"]["product"]
+        metafields = p.get("metafields", {}).get("edges", [])
+        meta_str = "\n".join(f"- {m['node']['namespace']}:{m['node']['key']} = {m['node']['value']}" for m in metafields)
+        return f"{p['title']}\nID: {p['id']}\nHandle: {p['handle']}\nDescription: {p['descriptionHtml']}\nMetafields:\n{meta_str or 'None'}"
+    except Exception as e:
+        logger.error(f"get_product failed: {e}")
+        return f"Error: {e}"
+
+
+async def create_product(product: dict, media: list = None) -> str:
+    mutation = """
+    mutation ProductCreate($product: ProductInput!, $media: [CreateMediaInput!]) {
+      productCreate(product: $product, media: $media) {
+        product {
+          id
+          title
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+    try:
+        variables = {"product": product, "media": media or []}
+        res = await make_shopify_request(mutation, variables=variables)
+        data = res["data"]["productCreate"]
+        if data["userErrors"]:
+            return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
+        return f"✅ Created product '{data['product']['title']}' (ID: {data['product']['id']})"
+    except Exception as e:
+        logger.error(f"create_product failed: {e}")
+        return f"Error: {e}"
+
+
+async def update_product(product: dict, media: list = None) -> str:
+    mutation = """
+    mutation UpdateProduct($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+      productUpdate(product: $product, media: $media) {
+        product { id title }
+        userErrors { field message }
+      }
+    }
+    """
+    try:
+        variables = {"product": product, "media": media or []}
+        res = await make_shopify_request(mutation, variables=variables)
+        data = res["data"]["productUpdate"]
+        if data["userErrors"]:
+            return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
+        return f"✅ Updated product '{data['product']['title']}' (ID: {data['product']['id']})"
+    except Exception as e:
+        logger.error(f"update_product failed: {e}")
+        return f"Error: {e}"
+
+
+async def delete_product(product_id: str, synchronous: bool = True) -> str:
+    mutation = """
+    mutation DeleteProduct($input: ProductDeleteInput!, $sync: Boolean) {
+      productDelete(input: $input, synchronous: $sync) {
+        deletedProductId
+        userErrors { field message }
+      }
+    }
+    """
+    try:
+        variables = {"input": {"id": product_id}, "sync": synchronous}
+        res = await make_shopify_request(mutation, variables=variables)
+        data = res["data"]["productDelete"]
+        if data["userErrors"]:
+            return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
+        return f"🗑️ Deleted product ID: {data['deletedProductId']}"
+    except Exception as e:
+        logger.error(f"delete_product failed: {e}")
+        return f"Error: {e}"
