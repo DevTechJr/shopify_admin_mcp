@@ -11,26 +11,53 @@ async def article_create(blog_id: str, title: str, body: str, author_name: str) 
         author_name: Name of the article author.
     """
     query = """
-    mutation ArticleCreate($article: ArticleInput!) {
+    mutation ArticleCreate($article: ArticleCreateInput!) {
       articleCreate(article: $article) {
-        article { id title body }
-        userErrors { message }
+        article {
+          id
+          title
+          body
+        }
+        userErrors {
+          field
+          message
+        }
       }
     }
     """
+    article_input = {
+        "blogId": blog_id,
+        "title": title,
+        "body": body,
+        "author": {"name": author_name},  # ✅ fix: must be an object
+        "isPublished": True               # ✅ optional, but good to set
+    }
+
     try:
-        article = {
-            "blogId": blog_id,
-            "title": title,
-            "body": body,
-            "author": {"name": author_name}
-        }
-        res = await make_shopify_request(query, variables={"article": article})
-        a = res["data"]["articleCreate"]["article"]
-        return f"📝 Created article '{a['title']}' (ID: {a['id']})"
+        res = await make_shopify_request(query, variables={"article": article_input})
+
+        # ✅ Log top-level errors if present
+        if "errors" in res:
+            logger.error(f"Top-level Shopify errors: {res['errors']}")
+            return f"GraphQL error: {res['errors'][0]['message']}"
+
+        data = res.get("data", {}).get("articleCreate", {})
+        if not data:
+            return f"❌ Unexpected response: {res}"
+
+        if data.get("userErrors"):
+            errors = "\n".join(f"- {e['message']} (field: {e.get('field')})" for e in data["userErrors"])
+            return f"❌ Failed to create article:\n{errors}"
+
+        article = data.get("article")
+        if not article:
+            return "❌ Article creation failed: No article returned."
+
+        return f"📝 Created article '{article['title']}' (ID: {article['id']})"
+
     except Exception as e:
         logger.error(f"article_create failed: {e}")
-        return f"Error: {e}"
+        return f"❌ Exception: {e}"
 
 
 async def article_update(article_id: str, title: str, body: str) -> str:

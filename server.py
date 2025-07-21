@@ -13,7 +13,7 @@ from tools.articles import (
     get_articles_for_blog,
     get_article
 )
-from tools.blogs import blog_update, blog_delete, blog_create, get_blogs, blog_update, blog_delete
+from tools.blogs import blog_update, blog_delete, blog_create, get_blogs, blog_update, blog_delete, get_blog_by_id
 from tools.customers import customer_send_account_invite_email, customers_list, customers_count, customer_get
 from tools.orders import orders_list, orders_count
 from tools.discount_codes import (
@@ -200,6 +200,15 @@ async def get_blogs_impl(first_n: int = 5) -> str:
     """
     return await get_blogs(first_n)
 
+@mcp.tool()
+async def get_blog_by_id_impl(blog_id: str) -> str:
+    """Retrieve a single blog by its Shopify ID.
+    
+    Args:
+        blog_id: Shopify GID of the blog to retrieve.
+    """
+    return await get_blog_by_id(blog_id)
+
 
 @mcp.tool()
 async def blog_create_impl(title: str, handle: str, comment_policy: str = "MODERATED") -> str:
@@ -328,9 +337,6 @@ async def delete_product_impl(product_id: str, synchronous: bool = True) -> str:
     """
     return await delete_product(product_id, synchronous)
 
-if __name__ == "__main__":
-    logger.info("Starting Shopify MCP server...")
-    mcp.run(transport='stdio')
 
 
 @mcp.tool()
@@ -465,3 +471,7 @@ async def discount_code_delete_impl(discount_code_id: str) -> dict:
     Delete a discount code by ID.
     """
     return await discount_code_delete(discount_code_id)
+
+if __name__ == "__main__":
+    logger.info("Starting Shopify MCP server...")
+    mcp.run(transport='stdio')

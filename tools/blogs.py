@@ -2,15 +2,24 @@ from utils.shopify_client import make_shopify_request
 from utils.logger import logger
 
 async def get_blogs(first_n: int = 5) -> str:
-    """Get blogs from the Shopify store.
+    """Get blogs from the Shopify store, including their full GIDs.
 
     Args:
         first_n: Number of blogs to retrieve (default: 5)
     """
     query = """
-    query blogs($first: Int!) {
+    query GetBlogs($first: Int!) {
       blogs(first: $first) {
-        nodes { id title handle updatedAt }
+        nodes {
+          id
+          title
+          handle
+          updatedAt
+          commentPolicy
+          createdAt
+          templateSuffix
+          tags
+        }
       }
     }
     """
@@ -19,10 +28,53 @@ async def get_blogs(first_n: int = 5) -> str:
         blogs = res["data"]["blogs"]["nodes"]
         if not blogs:
             return "No blogs found."
-        return "\n".join(f"{b['title']} (/{b['handle']})" for b in blogs)
+        return "\n".join(
+            f"{b['title']} (/{b['handle']}) - ID: {b['id']}" for b in blogs
+        )
     except Exception as e:
         logger.error(f"get_blogs failed: {e}")
         return f"Error: {e}"
+
+async def get_blog_by_id(blog_id: str) -> str:
+    """Retrieve a single blog by its Shopify GID.
+
+    Args:
+        blog_id: The full Shopify GID (e.g., gid://shopify/Blog/123456789)
+    """
+    query = """
+    query BlogByID($id: ID!) {
+      blog(id: $id) {
+        id
+        title
+        handle
+        commentPolicy
+        createdAt
+        updatedAt
+        templateSuffix
+        tags
+      }
+    }
+    """
+    try:
+        res = await make_shopify_request(query, variables={"id": blog_id})
+        blog = res["data"]["blog"]
+        if not blog:
+            return f"Blog not found for ID: {blog_id}"
+        return (
+            f"📝 Blog: {blog['title']}\n"
+            f"- Handle: /{blog['handle']}\n"
+            f"- ID: {blog['id']}\n"
+            f"- Comment Policy: {blog['commentPolicy']}\n"
+            f"- Created: {blog['createdAt']}\n"
+            f"- Updated: {blog['updatedAt']}\n"
+            f"- Template: {blog.get('templateSuffix') or 'None'}\n"
+            f"- Tags: {', '.join(blog['tags']) if blog['tags'] else 'None'}"
+        )
+    except Exception as e:
+        logger.error(f"get_blog_by_id failed: {e}")
+        return f"Error: {e}"
+
+
 
 async def blog_create(title: str, handle: str, comment_policy: str = "MODERATED") -> str:
     """Create a new blog.
