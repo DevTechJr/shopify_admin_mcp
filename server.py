@@ -451,19 +451,6 @@ async def discount_code_get_impl(discount_code_id: str) -> dict:
     """
     return await discount_code_get(discount_code_id)
 
-@mcp.tool()
-async def discount_code_create_impl(code: str, starts_at: str, ends_at: str = None) -> dict:
-    """
-    Create a new discount code.
-    """
-    return await discount_code_create(code, starts_at, ends_at)
-
-@mcp.tool()
-async def discount_code_update_impl(discount_code_id: str, code: str = None, ends_at: str = None) -> dict:
-    """
-    Update an existing discount code.
-    """
-    return await discount_code_update(discount_code_id, code, ends_at)
 
 @mcp.tool()
 async def discount_code_delete_impl(discount_code_id: str) -> dict:
