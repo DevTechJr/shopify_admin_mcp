@@ -36,7 +36,118 @@ async def get_pages(first_n: int = 5) -> str:
         return f"Error: {e}"
 
     
+async def get_publications() -> list:
+    """
+    Retrieves all sales channel publications (e.g., Online Store) from the Shopify store.
 
+    Returns:
+        list: A list of dictionaries with 'id', 'name', and 'channel.handle' for each publication.
+    """
+    query = """
+    query {
+      publications(first: 20) {
+        nodes {
+          id
+          name
+          channel {
+            handle
+          }
+        }
+      }
+    }
+    """
+    try:
+        res = await make_shopify_request(query)
+        publications = res["data"]["publications"]["nodes"]
+        return [
+            {
+                "id": pub["id"],
+                "name": pub["name"],
+                "handle": pub["channel"]["handle"]
+            }
+            for pub in publications
+        ]
+    except Exception as e:
+        logger.error(f"get_publications failed: {e}")
+        return [{"error": str(e)}]
+
+
+async def publish_product_to_online_store(product_id: str, publication_id: str) -> str:
+    """
+    Publishes a product to the Online Store sales channel using publishablePublish.
+
+    Args:
+        product_id (str): The GID of the product (e.g., "gid://shopify/Product/1234567890").
+        publication_id (str): The GID of the publication (typically for Online Store).
+
+    Returns:
+        str: Success message with product ID and title, or error message.
+    """
+    mutation = """
+    mutation PublishProduct($id: ID!, $publicationIds: [ID!]!) {
+      publishablePublish(id: $id, input: { publicationIds: $publicationIds }) {
+        publishable {
+          ... on Product {
+            id
+            title
+            publishedOnCurrentPublication
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+    variables = {
+        "id": product_id,
+        "publicationIds": [publication_id]
+    }
+
+    try:
+        res = await make_shopify_request(mutation, variables=variables)
+        if "errors" in res:
+            return f"GraphQL error: {res['errors']}"
+
+        data = res["data"]["publishablePublish"]
+        if data["userErrors"]:
+            return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
+
+        publishable = data["publishable"]
+        return f"✅ Published product '{publishable['title']}' (ID: {publishable['id']})"
+    except Exception as e:
+        logger.error(f"publish_product_to_online_store failed: {e}")
+        return f"Error: {e}"
+
+async def is_product_published_on_publication(product_id: str, publication_id: str) -> bool:
+    """
+    Check if a product is published on a specific sales channel/publication.
+
+    Args:
+        product_id (str): The Shopify GID of the product.
+        publication_id (str): The Shopify GID of the publication (sales channel).
+
+    Returns:
+        bool: True if published on the specified publication, False otherwise.
+    """
+    query = """
+    query ProductShow($id: ID!, $publicationId: ID!) {
+      product(id: $id) {
+        id
+        title
+        publishedOnPublication(publicationId: $publicationId)
+      }
+    }
+    """
+    variables = {"id": product_id, "publicationId": publication_id}
+    res = await make_shopify_request(query, variables=variables)
+    if "errors" in res:
+        raise Exception(f"GraphQL error: {res['errors']}")
+    if "data" not in res or "product" not in res["data"]:
+        raise Exception(f"Malformed response: {res}")
+    product = res["data"]["product"]
+    return product["publishedOnPublication"]
   
 async def page_create(
     title: str,

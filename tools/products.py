@@ -84,11 +84,10 @@ async def get_product(product_id: str) -> str:
         logger.error(f"get_product failed: {e}")
         return f"Error: {e}"
 
-
 async def create_product(product: dict, media: list = None) -> str:
     mutation = """
-    mutation ProductCreate($product: ProductInput!, $media: [CreateMediaInput!]) {
-      productCreate(product: $product, media: $media) {
+    mutation ProductCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
+      productCreate(input: $input, media: $media) {
         product {
           id
           title
@@ -100,9 +99,23 @@ async def create_product(product: dict, media: list = None) -> str:
       }
     }
     """
+
+    # Clean up productOptions if provided
+    if "productOptions" in product:
+        for option in product["productOptions"]:
+            if "values" in option:
+                option["values"] = [{"name": v} for v in option["values"]]
+
     try:
-        variables = {"product": product, "media": media or []}
+        variables = {
+            "input": product,
+            "media": media or []
+        }
         res = await make_shopify_request(mutation, variables=variables)
+        if "errors" in res:
+            return f"GraphQL error: {res['errors']}"
+        if "data" not in res or "productCreate" not in res["data"]:
+            return f"Malformed response: {res}"
         data = res["data"]["productCreate"]
         if data["userErrors"]:
             return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
@@ -113,26 +126,56 @@ async def create_product(product: dict, media: list = None) -> str:
 
 
 async def update_product(product: dict, media: list = None) -> str:
+    """
+    Core logic for updating a Shopify product via the Admin GraphQL API.
+
+    Args:
+        product (dict): Product update fields (must include 'id').
+        media (list, optional): List of CreateMediaInput dicts.
+
+    Returns:
+        str: Success or error message.
+    """
     mutation = """
-    mutation UpdateProduct($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+    mutation UpdateProductWithNewMedia($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
       productUpdate(product: $product, media: $media) {
-        product { id title }
-        userErrors { field message }
+        product {
+          id
+          title
+          media(first: 10) {
+            nodes {
+              alt
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
       }
     }
     """
     try:
         variables = {"product": product, "media": media or []}
         res = await make_shopify_request(mutation, variables=variables)
+        if "errors" in res:
+            return f"GraphQL error: {res['errors']}"
+        if "data" not in res or "productUpdate" not in res["data"]:
+            return f"Malformed response: {res}"
         data = res["data"]["productUpdate"]
         if data["userErrors"]:
             return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
-        return f"✅ Updated product '{data['product']['title']}' (ID: {data['product']['id']})"
+        product_info = data["product"]
+        return f"✅ Updated product '{product_info['title']}' (ID: {product_info['id']})"
     except Exception as e:
         logger.error(f"update_product failed: {e}")
         return f"Error: {e}"
-
-
+    
+    
 async def delete_product(product_id: str, synchronous: bool = True) -> str:
     mutation = """
     mutation DeleteProduct($input: ProductDeleteInput!, $sync: Boolean) {

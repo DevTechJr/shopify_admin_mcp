@@ -1,8 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 from tools.inventory import get_inventory_items
 from tools.products import get_products, get_product, create_product, update_product, delete_product
-from tools.blogs import get_blogs, blog_create
-from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete
+from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete, get_publications, publish_product_to_online_store, is_product_published_on_publication
 from utils.shopify_client import SHOPIFY_STORE, SHOPIFY_TOKEN, API_VERSION
 from utils.logger import logger
 from tools.menus import get_menus, update_menu
@@ -17,7 +16,7 @@ from tools.blogs import blog_update, blog_delete, blog_create, get_blogs, blog_u
 from tools.customers import customer_send_account_invite_email, customers_list, customers_count, customer_get
 from tools.orders import orders_list, orders_count
 from tools.discount_codes import (
-    discount_codes_list, discount_code_create, discount_code_get, discount_code_update, discount_code_delete)
+    discount_codes_list, discount_code_get, discount_code_delete)
 
 mcp = FastMCP("shopify_anidev")
 
@@ -309,23 +308,71 @@ async def get_product_impl(product_id: str) -> str:
 
 @mcp.tool()
 async def create_product_impl(product: dict, media: list = None) -> str:
-    """Create a new product.
+    """
+    Create a new Shopify product with optional media attachments.
 
     Args:
-        product: A dictionary of product fields (e.g., title, options).
-        media: Optional list of media to add to the product.
+        product (dict): A dictionary containing product details. Must follow Shopify's ProductInput format.
+            Required keys:
+                - title (str): Name of the product.
+            Optional keys:
+                - descriptionHtml (str): HTML-formatted product description.
+                - handle (str): Unique URL handle.
+                - tags (list[str]): Product tags.
+                - vendor (str): Product vendor name.
+                - status (str): 'ACTIVE', 'DRAFT', or 'ARCHIVED'.
+                - productOptions (list[dict]): List of option dictionaries:
+                    Example: [{ "name": "Color", "values": ["Red", "Blue"] }]
+        media (list, optional): List of CreateMediaInput objects.
+            Example:
+                [
+                    {
+                        "mediaContentType": "IMAGE",
+                        "originalSource": "https://example.com/image.png",
+                        "alt": "Product image"
+                    }
+                ]
+
+    Returns:
+        str: Success message with product ID or error message(s).
     """
     return await create_product(product, media)
 
+
 @mcp.tool()
 async def update_product_impl(product: dict, media: list = None) -> str:
-    """Update an existing product.
+    """
+    Update an existing Shopify product with optional new media attachments.
 
     Args:
-        product: A dictionary of fields to update. Must include the product ID.
-        media: Optional list of media to add.
+        product (dict): A dictionary of fields to update for the product. Must include:
+            - id (str): The Shopify GID of the product to update (e.g., "gid://shopify/Product/123456789").
+            Optional keys:
+                - title (str): New product title.
+                - descriptionHtml (str): HTML-formatted product description.
+                - handle (str): Unique URL handle.
+                - tags (list[str]): Product tags (overwrites all existing tags).
+                - vendor (str): Product vendor name.
+                - status (str): 'ACTIVE', 'DRAFT', or 'ARCHIVED'.
+                - productType (str): The product type.
+                - metafields (list[dict]): List of metafields to update.
+                - seo (dict): SEO title and description.
+                - templateSuffix (str): Theme template for the product.
+                - productOptions (list[dict]): List of option dictionaries:
+                    Example: [{ "name": "Color", "values": ["Red", "Blue"] }]
+                - requiresSellingPlan (bool): Whether the product is subscription-only.
+                - redirectNewHandle (bool): Whether to redirect the old handle to the new one.
+        media (list, optional): List of CreateMediaInput objects to add to the product.
+            Each item should be a dict with:
+                - mediaContentType (str): e.g., "IMAGE", "EXTERNAL_VIDEO"
+                - originalSource (str): URL of the media file
+                - alt (str, optional): Alt text for the media
+
+    Returns:
+        str: Success message with product ID or error message(s).
     """
     return await update_product(product, media)
+
 
 @mcp.tool()
 async def delete_product_impl(product_id: str, synchronous: bool = True) -> str:
@@ -336,6 +383,44 @@ async def delete_product_impl(product_id: str, synchronous: bool = True) -> str:
         synchronous: Whether to delete synchronously (default True).
     """
     return await delete_product(product_id, synchronous)
+
+@mcp.tool()
+async def publish_product_impl(product_id: str, publication_id: str) -> str:
+    """
+    Publish a Shopify product to the Online Store sales channel.
+
+    Args:
+        product_id (str): The global Shopify Product ID (e.g., gid://shopify/Product/123).
+        publication_id (str): The global Shopify Publication ID for the Online Store (e.g., gid://shopify/Publication/456).
+
+    Returns:
+        str: Confirmation message if successful, otherwise the error details.
+    """
+    return await publish_product_to_online_store(product_id, publication_id)
+
+@mcp.tool()
+async def get_publication_ids_impl() -> list:
+    """
+    Fetch publication (sales channel) IDs, including the Online Store channel.
+
+    Returns:
+        list: Publication entries with ID, name, and handle. Look for handle='online-store'.
+    """
+    return await get_publications()
+
+@mcp.tool()
+async def is_product_published_impl(product_id: str, publication_id: str) -> bool:
+    """
+    Check if a given product is published on a specific sales channel (e.g., Online Store).
+
+    Args:
+        product_id (str): The Shopify GID of the product.
+        publication_id (str): The Shopify GID of the publication (sales channel).
+
+    Returns:
+        bool: True if the product is published on the given sales channel, False otherwise.
+    """
+    return await is_product_published_on_publication(product_id, publication_id)
 
 
 
