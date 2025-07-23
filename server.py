@@ -1,7 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 from tools.inventory import get_inventory_items
 from tools.products import get_products, get_product, create_product, update_product, delete_product
-from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete, get_publications, publish_product_to_online_store, is_product_published_on_publication
+from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete, get_shopify_store_info
 from utils.shopify_client import SHOPIFY_STORE, SHOPIFY_TOKEN, API_VERSION
 from utils.logger import logger
 from tools.menus import get_menus, update_menu
@@ -20,6 +20,10 @@ from tools.discount_codes import (
 
 mcp = FastMCP("shopify_anidev")
 
+@mcp.tool()
+async def get_shopify_store_info_impl() -> str:
+    """Get information about the Shopify store."""
+    return await get_shopify_store_info()
 
 @mcp.tool()
 async def update_menu_impl(
@@ -383,46 +387,6 @@ async def delete_product_impl(product_id: str, synchronous: bool = True) -> str:
         synchronous: Whether to delete synchronously (default True).
     """
     return await delete_product(product_id, synchronous)
-
-@mcp.tool()
-async def publish_product_impl(product_id: str, publication_id: str) -> str:
-    """
-    Publish a Shopify product to the Online Store sales channel.
-
-    Args:
-        product_id (str): The global Shopify Product ID (e.g., gid://shopify/Product/123).
-        publication_id (str): The global Shopify Publication ID for the Online Store (e.g., gid://shopify/Publication/456).
-
-    Returns:
-        str: Confirmation message if successful, otherwise the error details.
-    """
-    return await publish_product_to_online_store(product_id, publication_id)
-
-@mcp.tool()
-async def get_publication_ids_impl() -> list:
-    """
-    Fetch publication (sales channel) IDs, including the Online Store channel.
-
-    Returns:
-        list: Publication entries with ID, name, and handle. Look for handle='online-store'.
-    """
-    return await get_publications()
-
-@mcp.tool()
-async def is_product_published_impl(product_id: str, publication_id: str) -> bool:
-    """
-    Check if a given product is published on a specific sales channel (e.g., Online Store).
-
-    Args:
-        product_id (str): The Shopify GID of the product.
-        publication_id (str): The Shopify GID of the publication (sales channel).
-
-    Returns:
-        bool: True if the product is published on the given sales channel, False otherwise.
-    """
-    return await is_product_published_on_publication(product_id, publication_id)
-
-
 
 @mcp.tool()
 async def customer_send_account_invite_email_impl(customer_id: str) -> str:

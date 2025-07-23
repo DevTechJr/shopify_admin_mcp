@@ -12,6 +12,7 @@ async def get_products(first_n: int = 3) -> str:
         products(first: $first) {
             edges {
                 node {
+                    id
                     title
                     handle
                     status
@@ -35,24 +36,27 @@ async def get_products(first_n: int = 3) -> str:
         products = result.get('data', {}).get('products', {}).get('edges', [])
         if not products:
             return "No products found."
+        
         formatted = []
         for product in products:
             node = product['node']
             variants = "\n".join(
-                f" - {v['node']['title']} (${v['node']['price']})" 
+                f"  - {v['node']['title']} (${v['node']['price']}) [SKU: {v['node']['sku'] or 'N/A'}]" 
                 for v in node['variants']['edges']
             )
             formatted.append(
-                f"Product: {node['title']}\n"
-                f"Status: {node['status']}\n"
-                f"Total Inventory: {node['totalInventory']}\n"
-                f"Variants:\n{variants}\n"
-                f"URL: https://{node['handle']}"
+                f"🛍️ Product: {node['title']}\n"
+                f"🆔 ID: {node['id']}\n"
+                f"🔗 Handle: {node['handle']}\n"
+                f"📦 Status: {node['status']} | Inventory: {node['totalInventory']}\n"
+                f"🧵 Variants:\n{variants}\n"
+                f"🌐 URL: https://{node['handle']}\n"
             )
         return "\n\n".join(formatted)
     except Exception as e:
-        logger.error(f"Products fetch failed: {str(e)}")
+        logger.error(f"get_products failed: {str(e)}")
         return f"Error: {str(e)}"
+
 
 async def get_product(product_id: str) -> str:
     query = """

@@ -1,6 +1,25 @@
 from utils.shopify_client import make_shopify_request
 from utils.logger import logger
 
+
+async def get_shopify_store_info() -> str:
+  query = """
+  query GetShopInfo {
+    shop {
+    name
+    primaryDomain {
+      url
+    }
+    }
+  }
+  """
+  try:
+    res = await make_shopify_request(query)
+    return res["data"]["shop"]
+  except Exception as e:
+    logger.error(f"get_shopify_store_info failed: {e}")
+    return f"Error: {e}"
+
 async def get_pages(first_n: int = 5) -> str:
     """Get online store pages from the Shopify store.
 
