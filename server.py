@@ -17,13 +17,15 @@ from tools.customers import customer_send_account_invite_email, customers_list, 
 from tools.orders import orders_list, orders_count
 from tools.discount_codes import (
     discount_codes_list, discount_code_get, discount_code_delete)
+import json
 
 mcp = FastMCP("shopify_anidev")
 
 @mcp.tool()
 async def get_shopify_store_info_impl() -> str:
     """Get information about the Shopify store."""
-    return await get_shopify_store_info()
+    info = await get_shopify_store_info()
+    return str(info)
 
 @mcp.tool()
 async def update_menu_impl(

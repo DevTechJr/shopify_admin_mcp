@@ -2,23 +2,60 @@ from utils.shopify_client import make_shopify_request
 from utils.logger import logger
 
 
-async def get_shopify_store_info() -> str:
-  query = """
-  query GetShopInfo {
-    shop {
-    name
-    primaryDomain {
-      url
+async def get_shopify_store_info() -> dict:
+    """
+    Retrieve comprehensive Shopify store information.
+
+    Returns:
+        dict: Store info including name, description, emails, domains, currency, timezone, owner, and more.
+    """
+    query = """
+    query GetShopInfo {
+      shop {
+        id
+        name
+        description
+        email
+        contactEmail
+        myshopifyDomain
+        primaryDomain { url host sslEnabled }
+        url
+        currencyCode
+        ianaTimezone
+        timezoneAbbreviation
+        timezoneOffset
+        timezoneOffsetMinutes
+        shopOwnerName
+        createdAt
+        updatedAt
+        billingAddress {
+          address1
+          address2
+          city
+          country
+          countryCode
+          zip
+          province
+          phone
+        }
+        plan {
+          displayName
+          partnerDevelopment
+        }
+        features {
+          storefront
+          multiLocation
+          subscriptions
+        }
+      }
     }
-    }
-  }
-  """
-  try:
-    res = await make_shopify_request(query)
-    return res["data"]["shop"]
-  except Exception as e:
-    logger.error(f"get_shopify_store_info failed: {e}")
-    return f"Error: {e}"
+    """
+    try:
+        res = await make_shopify_request(query)
+        return res["data"]["shop"]
+    except Exception as e:
+        logger.error(f"get_shopify_store_info failed: {e}")
+        return {"error": str(e)}
 
 async def get_pages(first_n: int = 5) -> str:
     """Get online store pages from the Shopify store.
