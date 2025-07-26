@@ -1,7 +1,7 @@
 from mcp.server.fastmcp import FastMCP
 from tools.inventory import get_inventory_items
-from tools.products import get_products, get_product, create_product, update_product, delete_product
-from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete, get_shopify_store_info
+from tools.products import get_products, get_product, create_product, update_product, delete_product, create_product_variants
+from tools.online_store import get_pages, page_create, get_page_html, update_page_html, page_delete, get_shopify_store_info, get_shopify_locations
 from utils.shopify_client import SHOPIFY_STORE, SHOPIFY_TOKEN, API_VERSION
 from utils.logger import logger
 from tools.menus import get_menus, update_menu
@@ -26,6 +26,22 @@ async def get_shopify_store_info_impl() -> str:
     """Get information about the Shopify store."""
     info = await get_shopify_store_info()
     return str(info)
+
+import json
+
+@mcp.tool()
+async def get_shopify_locations_impl(first: int = 50) -> str:
+    """
+    Get a list of locations from the Shopify store.
+
+    Args:
+        first (int): The number of locations to fetch (default: 50, max: 250).
+
+    Returns:
+        str: JSON string of locations or error message.
+    """
+    locations = await get_shopify_locations(first)
+    return json.dumps(locations, indent=2)
 
 @mcp.tool()
 async def update_menu_impl(
@@ -311,6 +327,84 @@ async def get_product_impl(product_id: str) -> str:
         product_id: The Shopify GID of the product.
     """
     return await get_product(product_id)
+
+@mcp.tool()
+async def create_product_variants_impl(
+    product_id: str,
+    variants: list,
+    media: list = None,
+    strategy: str = "DEFAULT"
+) -> str:
+    """
+    Create one or more product variants for an existing Shopify product, setting price and inventory.
+    Make sure you have the product_id and location_id to set inventory quantities.
+
+    Args:
+        product_id (str): The Shopify GID of the product to add variants to.
+        variants (list): List of variant dicts. Each variant can include:
+            - price (float or str): The price for the variant.
+            - compareAtPrice (float or str, optional): The compare-at price.
+            - optionValues (list[dict]): Required if the product has any options (e.g. 'Title').
+                Example:
+                [
+                    {
+                        "name": "Title",
+                        "value": "Small",
+                        "optionId": "gid://shopify/ProductOption/123456789"
+                    }
+                ]
+            - inventoryQuantities (list[dict], optional): List of inventory quantities per location:
+                [{ "availableQuantity": 10, "locationId": "gid://shopify/Location/123" }]
+            - sku (str, optional): SKU for the variant.
+            - barcode (str, optional): Barcode for the variant.
+            - taxable (bool, optional): Whether the variant is taxable.
+            - inventoryPolicy (str, optional): Inventory policy ("DENY" or "CONTINUE").
+            - metafields (list[dict], optional): Metafields for the variant.
+        media (list, optional): List of CreateMediaInput objects to associate with the product or variants.
+        strategy (str, optional): Bulk create strategy. Default is "DEFAULT".
+
+        Example:
+        variants = [
+    {
+        "price": 15.99,
+        "compareAtPrice": 19.99,
+        "optionValues": [
+            {"name": "Golden", "optionId": "gid://shopify/ProductOption/328272167"}
+        ],
+        "inventoryQuantities": [
+            {"availableQuantity": 10, "locationId": "gid://shopify/Location/123"}
+        ]
+    }
+]
+
+Example input mutation:
+
+{
+  "productId": "gid://shopify/Product/7837358293103",
+  "variants": [
+    {
+      "price": 10,
+      "optionValues": [
+        {
+          "name": "Standard Ocean Lover Size",
+          "optionName": "Standard Ocean Lover Size"
+        }
+      ],
+      "inventoryQuantities": [
+        {
+          "locationId": "gid://shopify/Location/73769451631",
+          "availableQuantity": 20
+        }
+      ]
+    }
+  ]
+}
+
+
+    Returns:
+        str: Success message with variant IDs or error message(s).
+    """
+    return await create_product_variants(product_id, variants, media, strategy)
 
 @mcp.tool()
 async def create_product_impl(product: dict, media: list = None) -> str:

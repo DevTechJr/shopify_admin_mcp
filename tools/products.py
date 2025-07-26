@@ -129,6 +129,8 @@ async def create_product(product: dict, media: list = None) -> str:
         return f"Error: {e}"
 
 
+
+
 async def update_product(product: dict, media: list = None) -> str:
     """
     Core logic for updating a Shopify product via the Admin GraphQL API.
@@ -198,4 +200,83 @@ async def delete_product(product_id: str, synchronous: bool = True) -> str:
         return f"🗑️ Deleted product ID: {data['deletedProductId']}"
     except Exception as e:
         logger.error(f"delete_product failed: {e}")
+        return f"Error: {e}"
+    
+async def create_product_variants(
+    product_id: str,
+    variants: list,
+    media: list = None,
+    strategy: str = "DEFAULT"
+) -> str:
+    """
+    Create one or more product variants for an existing Shopify product, setting price and inventory.
+
+    Args:
+        product_id (str): The Shopify GID of the product to add variants to (e.g., "gid://shopify/Product/123456789").
+        variants (list): List of variant dicts. Each variant can include:
+            - price (float or str): The price for the variant.
+            - compareAtPrice (float or str, optional): The compare-at price.
+            - optionValues (list[dict], optional): List of option values, e.g.:
+                [{ "name": "Color", "optionId": "gid://shopify/ProductOption/123" }]
+            - inventoryQuantities (list[dict], optional): List of inventory quantities per location:
+                [{ "availableQuantity": 10, "locationId": "gid://shopify/Location/123" }]
+            - sku (str, optional): SKU for the variant.
+            - barcode (str, optional): Barcode for the variant.
+            - taxable (bool, optional): Whether the variant is taxable.
+            - inventoryPolicy (str, optional): Inventory policy ("DENY" or "CONTINUE").
+            - metafields (list[dict], optional): Metafields for the variant.
+        media (list, optional): List of CreateMediaInput objects to associate with the product or variants.
+        strategy (str, optional): Bulk create strategy. Default is "DEFAULT".
+
+    Returns:
+        str: Success message with variant IDs or error message(s).
+    """
+ 
+    mutation = """
+mutation ProductVariantsBulkCreate(
+  $productId: ID!,
+  $variants: [ProductVariantsBulkInput!]!,
+  $media: [CreateMediaInput!],
+  $strategy: ProductVariantsBulkCreateStrategy
+) {
+  productVariantsBulkCreate(
+    productId: $productId,
+    variants: $variants,
+    media: $media,
+    strategy: $strategy
+  ) {
+    productVariants {
+      id
+      title
+      price
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+"""
+
+    
+    try:
+        variables = {
+            "productId": product_id,
+            "variants": variants,
+            "media": media or [],
+            "strategy": strategy
+        }
+        res = await make_shopify_request(mutation, variables=variables)
+        if "errors" in res:
+            return f"GraphQL error: {res['errors']}"
+        if "data" not in res or "productVariantsBulkCreate" not in res["data"]:
+            return f"Malformed response: {res}"
+        data = res["data"]["productVariantsBulkCreate"]
+        if data["userErrors"]:
+            return "\n".join([f"- {e['field']}: {e['message']}" for e in data["userErrors"]])
+        variants_info = data["productVariants"]
+        variant_ids = [v["id"] for v in variants_info]
+        return f"✅ Created variants: {variant_ids}"
+    except Exception as e:
+        logger.error(f"create_product_variants failed: {e}")
         return f"Error: {e}"

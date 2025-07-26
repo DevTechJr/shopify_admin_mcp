@@ -36,6 +36,48 @@ async def get_shopify_store_info() -> dict:
     except Exception as e:
         logger.error(f"get_shopify_store_info failed: {e}")
         return {"error": str(e)}
+    
+async def get_shopify_locations(first: int = 50) -> dict:
+    """
+    Retrieve a list of locations from the Shopify store.
+
+    Args:
+        first (int): The number of locations to fetch (default: 50, max: 250).
+
+    Returns:
+        dict: Dictionary containing a list of locations with their id, name, address, and more.
+    """
+    query = """
+    query GetLocations($first: Int!) {
+      locations(first: $first) {
+        nodes {
+          id
+          name
+          address {
+            address1
+            address2
+            city
+            province
+            country
+            zip
+          }
+
+        }
+      }
+    }
+    """
+    try:
+        variables = {"first": first}
+        res = await make_shopify_request(query, variables=variables)
+        if "errors" in res:
+            return {"error": res["errors"]}
+        if "data" not in res or "locations" not in res["data"]:
+            return {"error": "Malformed response", "response": res}
+        return res["data"]["locations"]["nodes"]
+    except Exception as e:
+        logger.error(f"get_shopify_locations failed: {e}")
+        return {"error": str(e)}
+
 
 async def get_pages(first_n: int = 5) -> str:
     """Get online store pages from the Shopify store.
