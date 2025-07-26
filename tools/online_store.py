@@ -17,41 +17,21 @@ async def get_shopify_store_info() -> dict:
         description
         email
         contactEmail
-        myshopifyDomain
-        primaryDomain { url host sslEnabled }
         url
-        currencyCode
-        ianaTimezone
-        timezoneAbbreviation
-        timezoneOffset
-        timezoneOffsetMinutes
-        shopOwnerName
-        createdAt
-        updatedAt
-        billingAddress {
-          address1
-          address2
-          city
-          country
-          countryCode
-          zip
-          province
-          phone
-        }
-        plan {
-          displayName
-          partnerDevelopment
-        }
         features {
           storefront
-          multiLocation
-          subscriptions
         }
       }
     }
     """
     try:
         res = await make_shopify_request(query)
+        # Log the full response for debugging
+        logger.info(f"Shopify response: {res}")
+        if "errors" in res:
+            return {"error": res["errors"]}
+        if "data" not in res or "shop" not in res["data"]:
+            return {"error": "Malformed response", "response": res}
         return res["data"]["shop"]
     except Exception as e:
         logger.error(f"get_shopify_store_info failed: {e}")
