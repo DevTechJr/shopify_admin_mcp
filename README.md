@@ -1,10 +1,10 @@
-# Shopify Admin MCP Server (35 tools)
+# 🛠️🛍 Shopify Admin MCP Server (35 tools)
 
 This project is a Claude-powered developer copilot tailored for Shopify merchants. It replicates and **extends** Shopify Sidekick with powerful multi-app integrations — Shopify Admin, Google Calendar, and Airtable — all wired through a Model Control Protocol (MCP) server.
 
 <img width="1918" height="1078" alt="image" src="https://github.com/user-attachments/assets/0065aee5-9d44-4c69-a41f-a1e9cf48f673" />
 
-> 🎥 **[Watch my demo video](https://youtu.be/QHsmf9cPQJc)** ← *(insert your demo link here)*
+> 🎥 **[Watch my demo video](https://youtu.be/QHsmf9cPQJc)** ← *(See Copilot in action!)*
 
 ---
 
@@ -14,52 +14,56 @@ Claude understands your business context, talks to your tools, and helps you run
 
 ### 🔧 Supported Tools (35 Total)
 
-Each tool is implemented on the Shopify MCP server and callable from Claude's agent. Here's a breakdown of the prominent ones:
+Each tool is implemented on this custom Shopify MCP server and callable from Claude's agent. Here's a breakdown of what's available:
 
-#### Shopify Tools
-##### Store Management:
+#### 🛠️🛍 Shopify Tools  
+##### 🏬 Store Management:
 
 - Store info and locations (2 tools)
 - Navigation/menu management (2 tools)
 
-##### Product & Inventory:
+##### 📦 Product & Inventory:
 
 - Product CRUD operations (6 tools)
 - Inventory management (2 tools)
 - Product variant creation (1 tool)
 
-##### Content Management:
+##### 📰 Content Management:
 
 - Blog management (5 tools)
 - Article management (4 tools)
 - Page management (4 tools)
 
-##### Customer & Order Management:
+##### 👥📑 Customer & Order Management:
 
 - Customer operations (4 tools)
 - Order management (2 tools)
 
-##### Marketing:
+##### 📣 Marketing:
 
 - Discount code management (3 tools)
 - Customer invitations (1 tool)
 
-#### Calendar Tools (external mcp server)
+#### 📆 Calendar Tools (external MCP server)
+
 - `getCalendars`
 - `getEvents`
 - `createEvent`
 
-#### Airtable Tools (external mcp server)
+#### 📊 Airtable Tools (external MCP server)
+
 - `syncInventoryToAirtable`
 - `addRowToAirtable`
 - `updateAirtableRow`
 - `getAirtableInventoryTable`
 
-#### Utility Tools (external mcp server)
+#### 🧠🧰 Utility Tools (external MCP server)
+
 - `generateChart`
 - `generateCompetitorAnalysis`
 - `generateProductIdeas`
 - `suggestBundlesAndOffers`
+
 
 ---
 
