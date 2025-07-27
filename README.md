@@ -136,4 +136,6 @@ Claude will now be able to call any of the above tools as an autonomous Shopify 
 
 ## 📩 Questions or Feedback?
 
-Feel free to open an issue or email [you@example.com]. Proudly built for the Shopify team with ❤️ by Anirudh.
+🕹 Feel free to open an issue or connect with me on Linkedin. 
+
+🛠️🛍 Proudly built for the Shopify team with ❤️ by Anirudh.
