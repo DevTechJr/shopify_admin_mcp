@@ -386,8 +386,8 @@ Example input mutation:
       "price": 10,
       "optionValues": [
         {
-          "name": "Standard Ocean Lover Size",
-          "optionName": "Standard Ocean Lover Size"
+          "name": "Default Title",
+          "optionName": "Title"
         }
       ],
       "inventoryQuantities": [

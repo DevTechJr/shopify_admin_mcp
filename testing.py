@@ -1,5 +1,7 @@
 import requests
 
+# Testing the Shopify graphQL interface
+
 def query_shopify_inventory_items(store_url, access_token, first_n=2):
     url = f"https://{store_url}/admin/api/2025-07/graphql.json"
     headers = {
